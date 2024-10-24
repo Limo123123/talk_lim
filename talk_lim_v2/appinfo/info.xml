@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<info>
+	<id>talk_lim</id>
+	<name>TalkLim</name>
+	<summary>Talk lim forever</summary>
+	<description>
+	<![CDATA[LIMO Hates descryptions!]]>
+	</description>
+	<version>1.0.2</version>
+	<licence>MIT</licence>
+	<author mail="" homepage="">We dont know</author>
+	<namespace>TalkBotExample</namespace>
+	<category>tools</category>
+	<website>https://example.com</website>
+	<repository type="git">https://github.com/cloud-py-api/nc_py_api</repository>
+	<dependencies>
+		<nextcloud min-version="28" max-version="30"/>
+	</dependencies>
+	<external-app>
+		<docker-install>
+			<registry>ghcr.io</registry>
+			<image>limo123123/talk_lim_v2</image>
+			<image-tag>latest</image-tag>
+		</docker-install>
+		<scopes>
+			<value>TALK</value>
+			<value>TALK_BOT</value>
+		</scopes>
+	</external-app>
+</info>
