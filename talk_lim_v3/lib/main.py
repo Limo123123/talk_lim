@@ -35,6 +35,23 @@ APP.add_middleware(AppAPIAuthMiddleware)
 # Bot definieren
 TALK_LIM_BOT = talk_bot.TalkBot("/talk_lim_bot", "TALK_LIM Bot", "Usage: `@talk_lim [command]`")
 
+def convert_currency(amount: float, from_currency: str, to_currency: str) -> float:
+    """Konvertiert eine Menge von einer Währung in eine andere."""
+    base_url = "https://api.exchangerate-api.com/v4/latest/"
+    response = httpx.get(base_url + from_currency, timeout=60)
+    data = response.json()
+
+    if "rates" in data:
+        rates = data["rates"]
+        if from_currency == to_currency:
+            return amount
+
+        if from_currency in rates and to_currency in rates:
+            conversion_rate = rates[to_currency] / rates[from_currency]
+            return amount * conversion_rate
+        raise ValueError("Ungültige Währung!")
+    raise ValueError("Konnte die Wechselkurse nicht abrufen!")
+
 # Hauptfunktion zur Verarbeitung von Bot-Anfragen
 def talk_lim_bot_process_request(message: talk_bot.TalkBotMessage):
     try:
@@ -90,7 +107,7 @@ def talk_lim_bot_process_request(message: talk_bot.TalkBotMessage):
         # Mathe-Berechnungen
         elif "@talk_lim calc" in message_text:
             try:
-                expression = message_text.split("calc", 1)[1].strip()
+                expression = message_text.split("calc", 1)[1].strip().replace(',', '.')
                 result = eval(expression)
                 TALK_LIM_BOT.send_message(f"Limo Bot: Das Ergebnis von {expression} ist {result}", message)
             except Exception:
@@ -131,10 +148,11 @@ def talk_lim_bot_process_request(message: talk_bot.TalkBotMessage):
 
         # Währungsrechner (experimentell)
         elif settings["experimentalfunctions"] and "@talk_lim currency" in message_text:
-            parts = re.findall(r"currency\s(\d+)\s(\w+)\sto\s(\w+)", message_text, re.IGNORECASE)
+            parts = re.findall(r"currency\s([\d,]+)\s(\w+)\sto\s(\w+)", message_text, re.IGNORECASE)
             if parts:
-                amount, from_currency, to_currency = parts[0]
-                conversion = convert_currency(float(amount), from_currency.upper(), to_currency.upper())
+                amount_str, from_currency, to_currency = parts[0]
+                amount = float(amount_str.replace(',', '.'))  # Komma durch Punkt ersetzen
+                conversion = convert_currency(amount, from_currency.upper(), to_currency.upper())
                 if conversion:
                     TALK_LIM_BOT.send_message(
                         f"Limo Bot: {amount} {from_currency} entspricht ungefähr {conversion:.2f} {to_currency}", message
@@ -156,26 +174,9 @@ def talk_lim_bot_process_request(message: talk_bot.TalkBotMessage):
             if len(parts) == 2:
                 time, reminder_message = parts
                 reminders.append((time, reminder_message))
-                TALK_LIM_BOT.send_message(f"Limo Bot: Erinnerung für '{reminder_message}' um '{time}' hinzugefügt.", message)
+                TALK_LIM_BOT.send_message(f"Limo Bot: Erinnerung hinzugefügt - '{reminder_message}' in {time}.", message)
             else:
-                TALK_LIM_BOT.send_message("Limo Bot: Ungültiger Erinnerungsbefehl. Verwende '@talk_lim add reminder [Zeit] [Nachricht]'.", message)
-
-        # Zitate-Funktionen
-        elif "@talk_lim add quote" in message_text:
-            quote = message_text.split("add quote", 1)[1].strip()
-            quotes.append(quote)
-            TALK_LIM_BOT.send_message(f"Limo Bot: Zitat hinzugefügt - '{quote}'", message)
-
-        elif "@talk_lim list quotes" in message_text:
-            quote_list = "\n".join([f"{i + 1}. {q}" for i, q in enumerate(quotes)])
-            TALK_LIM_BOT.send_message(f"Limo Bot: Zitate:\n{quote_list}", message)
-
-        elif "@talk_lim random quote" in message_text:
-            if quotes:
-                random_quote = random.choice(quotes)
-                TALK_LIM_BOT.send_message(f"Limo Bot: Zufälliges Zitat - '{random_quote}'", message)
-            else:
-                TALK_LIM_BOT.send_message("Limo Bot: Keine Zitate vorhanden.", message)
+                TALK_LIM_BOT.send_message("Limo Bot: Ungültiger Erinnerungsbefehl.", message)
 
     except Exception as e:
         TALK_LIM_BOT.send_message(f"Limo Bot: Ein Fehler ist aufgetreten - {str(e)}", message)
