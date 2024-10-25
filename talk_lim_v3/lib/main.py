@@ -60,6 +60,19 @@ def talk_lim_bot_process_request(message: talk_bot.TalkBotMessage):
 
         message_text = message.object_content["message"]
 
+        # Standardantworten für den Bot
+        if message_text.startswith("@talk_lim"):
+            # Nachrichten nach @talk_lim abfangen
+            response_text = message_text.split("@talk_lim", 1)[1].strip()
+
+            # Ignoriere den Inhalt in Klammern
+            if '(' in response_text and ')' in response_text:
+                response_text = re.sub(r'\(.*?\)', '', response_text).strip()
+
+            # Sende die Antwort zurück
+            TALK_LIM_BOT.send_message(f"Limo Bot: {response_text}", message)
+            return
+
         # Bot-Einstellungen bearbeiten
         if "@talk_lim settings botrule" in message_text:
             if "experimentalfunctions" in message_text:
@@ -138,11 +151,10 @@ def talk_lim_bot_process_request(message: talk_bot.TalkBotMessage):
             - @talk_lim add quote [Zitat]: Ein Zitat hinzufügen.
             - @talk_lim list quotes: Alle gespeicherten Zitate auflisten.
             - @talk_lim random quote: Ein zufälliges Zitat anzeigen.
-            - @talk_lim start quiz: Ein Trivia-Quiz starten (experimentell).
-            - @talk_lim add reminder [Zeit] [Nachricht]: Eine Erinnerung hinzufügen (experimentell).
             """
             if settings["experimentalfunctions"]:
                 help_message += "- @talk_lim currency [Betrag] [von_Währung] to [zu_Währung]: Währungsumrechnung (experimentell).\n"
+                help_message += "- @talk_lim add reminder [Zeit] [Nachricht]: Eine Erinnerung hinzufügen (experimentell).\n"
                 help_message += "- @talk_lim start quiz: Ein Trivia-Quiz starten (experimentell).\n"
             TALK_LIM_BOT.send_message(f"Limo Bot: Hilfe:\n{help_message}", message)
 
@@ -166,17 +178,7 @@ def talk_lim_bot_process_request(message: talk_bot.TalkBotMessage):
         elif settings["experimentalfunctions"] and "@talk_lim start quiz" in message_text:
             question, answer = random.choice(trivia_questions)
             TALK_LIM_BOT.send_message(f"Limo Bot Quiz: {question}", message)
-            # Hier kannst du die Antwort speichern oder eine Interaktion hinzufügen
-
-        # Erinnerungsfunktion (experimentell)
-        elif settings["experimentalfunctions"] and "@talk_lim add reminder" in message_text:
-            parts = message_text.split("add reminder", 1)[1].strip().split(" ", 1)
-            if len(parts) == 2:
-                time, reminder_message = parts
-                reminders.append((time, reminder_message))
-                TALK_LIM_BOT.send_message(f"Limo Bot: Erinnerung hinzugefügt - '{reminder_message}' in {time}.", message)
-            else:
-                TALK_LIM_BOT.send_message("Limo Bot: Ungültiger Erinnerungsbefehl.", message)
+            # Hier kannst du Logik hinzufügen, um die Antwort des Benutzers zu überprüfen
 
     except Exception as e:
         TALK_LIM_BOT.send_message(f"Limo Bot: Ein Fehler ist aufgetreten - {str(e)}", message)
